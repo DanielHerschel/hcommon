@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+var rmq = &RabbitMQ{&amqp.Connection{}, &amqp.Channel{}, amqp.Queue{}}
 
 func Test_NewRabbitMQ(t *testing.T) {
 	conn := &amqp.Connection{}
@@ -23,7 +24,7 @@ func Test_NewRabbitMQ(t *testing.T) {
 		client, err := NewRabbitMQ(RabbitMQParams{"localhost", 5672, "admin", "admin"})
 
 		assert.Nil(t, err)
-		assert.Equal(t, &RabbitMQ{conn, ch}, client)
+		assert.Equal(t, &RabbitMQ{conn, ch, amqp.Queue{}}, client)
 	})
 
 	t.Run("test invalid url", func(t *testing.T) {
@@ -47,7 +48,6 @@ func Test_NewRabbitMQ(t *testing.T) {
 }
 
 func Test_DeclareExchange(t *testing.T) {
-	rmq := &RabbitMQ{&amqp.Connection{}, &amqp.Channel{}}
 	t.Run("test queue created", func(t *testing.T) {
 		qDeclarePatch := gomonkey.ApplyMethodReturn(rmq.channel, "ExchangeDeclare", nil)
 		defer qDeclarePatch.Reset()
@@ -68,7 +68,6 @@ func Test_DeclareExchange(t *testing.T) {
 }
 
 func Test_DeclareQueue(t *testing.T) {
-	rmq := &RabbitMQ{&amqp.Connection{}, &amqp.Channel{}}
 	t.Run("test queue created", func(t *testing.T) {
 		qDeclarePatch := gomonkey.ApplyMethodReturn(rmq.channel, "QueueDeclare", amqp.Queue{}, nil)
 		defer qDeclarePatch.Reset()
@@ -76,6 +75,7 @@ func Test_DeclareQueue(t *testing.T) {
 		err := rmq.DeclareQueue("test", true, true)
 
 		assert.Nil(t, err)
+		assert.NotNil(t, rmq.queue)
 	})
 
 	t.Run("test error creating queue", func(t *testing.T) {
@@ -85,11 +85,11 @@ func Test_DeclareQueue(t *testing.T) {
 		err := rmq.DeclareQueue("test", true, true)
 
 		assert.NotNil(t, err)
+		assert.NotNil(t, rmq.queue)
 	})
 }
 
 func Test_Close(t *testing.T) {
-	rmq := &RabbitMQ{&amqp.Connection{}, &amqp.Channel{}}
 	t.Run("test doesn't panic", func(t *testing.T) {
 		chanClosePatch := gomonkey.ApplyMethodReturn(rmq.channel, "Close", nil)
 		connClosePatch := gomonkey.ApplyMethodReturn(rmq.connection, "Close", nil)

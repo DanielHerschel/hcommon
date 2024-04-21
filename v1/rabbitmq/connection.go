@@ -38,6 +38,7 @@ func NewRabbitMQ(params RabbitMQParams) (*RabbitMQ, error) {
 type RabbitMQ struct {
 	connection *amqp.Connection
 	channel *amqp.Channel
+	queue amqp.Queue
 }
 
 func (r *RabbitMQ) DeclareExchange(name, kind string, durable, autoDelete bool) error {
@@ -45,10 +46,11 @@ func (r *RabbitMQ) DeclareExchange(name, kind string, durable, autoDelete bool) 
 }
 
 func (r *RabbitMQ) DeclareQueue(name string, durable, autoDelete bool) error {
-	_, err := r.channel.QueueDeclare(name, durable, autoDelete, false, false, nil)
+	q, err := r.channel.QueueDeclare(name, durable, autoDelete, false, false, nil)
 	if err != nil {
 		return err
 	}
+	r.queue = q
 	return nil
 }
 
