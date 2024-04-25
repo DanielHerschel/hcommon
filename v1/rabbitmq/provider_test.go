@@ -28,3 +28,7 @@ func Test_PublishMessage(t *testing.T) {
 		assert.NotNil(t, err)
 	})
 }
+
+func Test_Consume(t *testing.T) {
+	
+}
